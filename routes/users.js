@@ -104,7 +104,14 @@ router.post("/login", async (req, res, next) => {
     }
     //process
     const token = jwt.sign(
-      { _id: user._id, isAdmin: user.isAdmin, isAgent: user.isAgent },
+      {
+        _id: user._id,
+        isAdmin: user.isAdmin,
+        isAgent: user.isAgent,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      },
       process.env.JWT_KEY
     );
     //response
@@ -116,21 +123,34 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.get("/:id", authMW, async (req, res, next) => {
-  //* Get user - The registered user or admin or agent
+router.get("/", authMW, async (req, res, next) => {
+  //* Get all - Admin
   try {
     //validate system
-    if (
-      !req.user.isAdmin &&
-      !req.user.isAgent &&
-      req.user._id != req.params.id
-    ) {
-      const validationError = new Error(
-        "You are not a Admin user or this user."
-      );
-      validationError.statusCode = 403;
-      return next(validationError);
+    if (!req.user.isAdmin) {
+      const authError = new Error("You are not authorized to view users");
+      authError.statusCode = 403;
+      return next(authError);
     }
+    //process
+    let users = await User.find().select("-password");
+    if (!users) {
+      const notFoundError = new Error("No users found");
+      notFoundError.statusCode = 404;
+      return next(notFoundError);
+    }
+    //response
+    res.status(200).send(users);
+  } catch (err) {
+    const serverError = new Error("Internal Server Error");
+    serverError.statusCode = 500;
+    return next(serverError);
+  }
+});
+
+router.get("/:id", authMW, async (req, res, next) => {
+  //* Get user details - every user
+  try {
     //process
     const user = await User.findById(req.params.id).select("-password");
 

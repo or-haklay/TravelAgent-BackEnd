@@ -77,7 +77,6 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  orders: [],
   passport: { type: passportSchema, required: false },
 });
 
@@ -104,7 +103,6 @@ const validation = joi.object({
   isAdmin: joi.boolean(),
   createAt: joi.date(),
   balance: joi.number(),
-  orders: joi.array().items(joi.string()),
   passport: {
     passportNumber: joi.string(),
     passportDate: joi.date(),

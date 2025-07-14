@@ -1,3 +1,4 @@
+const { timeStamp } = require("console");
 const joi = require("joi");
 const mongoose = require("mongoose");
 
@@ -60,17 +61,43 @@ const passengerSchema = new mongoose.Schema({
     trim: true,
     enum: ["Male", "Female", "Other", "Prefer not to say"],
   },
+  passportDate: {
+    type: Date,
+    required: false,
+  },
 });
 
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  number: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+});
 const orderSchema = new mongoose.Schema(
   {
-    customerNumber: {
-      type: mongoose.Schema.Types.ObjectId,
+    customer: {
+      type: userSchema,
       required: true,
       ref: "User",
     },
-    agentNumber: {
-      type: mongoose.Schema.Types.ObjectId,
+    agent: {
+      type: userSchema,
       required: false,
       ref: "User",
     },
@@ -89,10 +116,11 @@ const orderSchema = new mongoose.Schema(
     orderStatus: {
       type: String,
       required: true,
-      default: "Send To Agent",
+      default: "Wait For Agent",
       enum: [
-        "Send To Agent",
-        "Pending Agent Approval",
+        "Wait For Agent",
+        "In Progress",
+        "Pending Customer Approval",
         "Confirmed",
         "Cancelled",
       ],
@@ -126,7 +154,12 @@ const orderSchema = new mongoose.Schema(
 const Order = mongoose.model("Order", orderSchema, "orders");
 
 const orderValidation = joi.object({
-  customerNumber: joi.string().hex().length(24),
+  customer: joi.object({
+    name: joi.string().required().trim(),
+    email: joi.string().email().required().trim(),
+    phone: joi.string().required().trim(),
+    number: joi.string().required().trim(),
+  }),
   agentNumber: joi.string().hex().length(24),
   orderDate: joi.date(),
   flight: joi
@@ -149,7 +182,13 @@ const orderValidation = joi.object({
     .optional(),
   orderStatus: joi
     .string()
-    .valid("Send To Agent", "Pending Agent Approval", "Confirmed", "Cancelled"),
+    .valid(
+      "Wait For Agent",
+      "In Progress",
+      "Pending Customer Approval",
+      "Confirmed",
+      "Cancelled"
+    ),
   Passengers: joi
     .array()
     .items(
@@ -160,24 +199,33 @@ const orderValidation = joi.object({
         nationality: joi.string().required().trim(),
         dateOfBirth: joi.date().required(),
         gender: joi.string().required().trim(),
+        passportDate: joi.date(),
       })
     )
     .min(1)
     .required(),
-  notes: joi.string().trim(),
+  notes: joi.string().trim().allow(""),
 });
 
-const orderUpdateByUserValidation = joi.object({
-  flight: joi.object({
-    flightFrom: joi.string().trim(),
-    flightTo: joi.string().trim(),
-    flightDate: joi.date(),
-  }),
-  returnFlight: joi.object({
-    flightFrom: joi.string().trim(),
-    flightTo: joi.string().trim(),
-    flightDate: joi.date(),
-  }),
+const orderUpdate = joi.object({
+  flight: joi
+    .object({
+      flightFrom: joi.string().trim().allow(""),
+      flightTo: joi.string().trim().allow(""),
+      flightDate: joi.date().allow(""),
+      flightTime: joi.string().trim().allow(""),
+      flightNumber: joi.string().trim().allow(""),
+    })
+    .optional(),
+  returnFlight: joi
+    .object({
+      flightFrom: joi.string().trim().allow(""),
+      flightTo: joi.string().trim().allow(""),
+      flightDate: joi.date().allow(""),
+      flightTime: joi.string().trim().allow(""),
+      flightNumber: joi.string().trim().allow(""),
+    })
+    .optional(),
   Passengers: joi
     .array()
     .items(
@@ -188,31 +236,62 @@ const orderUpdateByUserValidation = joi.object({
         nationality: joi.string().required().trim(),
         dateOfBirth: joi.date().required(),
         gender: joi.string().required().trim(),
+        passportDate: joi.date().allow(""),
       })
     )
-    .min(1),
-  notes: joi.string().trim(),
+    .min(1)
+    .optional(),
+  price: joi.number().min(0).optional(),
+  orderStatus: joi
+    .string()
+    .valid(
+      "Wait For Agent",
+      "In Progress",
+      "Pending Customer Approval",
+      "Confirmed",
+      "Cancelled"
+    )
+    .optional(),
+  notes: joi.string().trim().optional().allow(""),
+  agent: joi
+    .object({
+      name: joi.string().trim(),
+      email: joi.string().email().trim(),
+      phone: joi.string().trim(),
+      number: joi.string().trim(),
+    })
+    .optional(),
 });
 
 const orderUpdateByAgentValidation = joi.object({
   orderDate: joi.date(),
-  flight: joi.object({
-    flightFrom: joi.string().trim(),
-    flightTo: joi.string().trim(),
-    flightDate: joi.date(),
-    flightTime: joi.string().trim(),
-    flightNumber: joi.string().trim(),
-  }),
-  returnFlight: joi.object({
-    flightFrom: joi.string().trim(),
-    flightTo: joi.string().trim(),
-    flightDate: joi.date(),
-    flightTime: joi.string().trim(),
-    flightNumber: joi.string().trim(),
-  }),
+  flight: joi
+    .object({
+      flightFrom: joi.string().trim(),
+      flightTo: joi.string().trim(),
+      flightDate: joi.date(),
+      flightTime: joi.string().trim().allow(""),
+      flightNumber: joi.string().trim().allow(""),
+    })
+    .required(),
+  returnFlight: joi
+    .object({
+      flightFrom: joi.string().trim().allow(""),
+      flightTo: joi.string().trim().allow(""),
+      flightDate: joi.date().allow(""),
+      flightTime: joi.string().trim().allow(""),
+      flightNumber: joi.string().trim().allow(""),
+    })
+    .optional(),
   orderStatus: joi
     .string()
-    .valid("Send To Agent", "Pending Agent Approval", "Confirmed", "Cancelled"),
+    .valid(
+      "Wait For Agent",
+      "In Progress",
+      "Pending Customer Approval",
+      "Confirmed",
+      "Cancelled"
+    ),
   price: joi.number().min(0),
   Passengers: joi
     .array()
@@ -224,15 +303,16 @@ const orderUpdateByAgentValidation = joi.object({
         nationality: joi.string().required().trim(),
         dateOfBirth: joi.date().required(),
         gender: joi.string().required().trim(),
+        passportDate: joi.date().allow(""),
       })
     )
     .min(1),
-  notes: joi.string().trim(),
+  notes: joi.string().trim().allow(""),
 });
 
 module.exports = {
   Order,
   orderValidation,
-  orderUpdateByUserValidation,
+  orderUpdate,
   orderUpdateByAgentValidation,
 };
