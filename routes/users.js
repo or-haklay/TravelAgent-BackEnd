@@ -123,6 +123,51 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
+router.put("/:id/password", authMW, async (req, res, next) => {
+  //* Update user password - The registered user or Admin
+  try {
+    //validate request
+    const { error } = UserUpdateValidation.validate(req.body);
+    if (error) {
+      const validationError = new Error(error.details[0].message);
+      validationError.statusCode = 400;
+      return next(validationError);
+    }
+
+    //validate system
+    if (!req.user.isAdmin && req.user._id != req.params.id) {
+      const validationError = new Error(
+        "You are not a Admin user or this user."
+      );
+      validationError.statusCode = 403;
+      return next(validationError);
+    }
+    //process
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { password: hashedPassword },
+      { new: true, runValidators: true }
+    );
+    if (!updatedUser) {
+      const notFoundError = new Error("User not found");
+      notFoundError.statusCode = 404;
+      return next(notFoundError);
+    }
+    //response
+    res
+      .status(200)
+      .send(
+        _.pick(updatedUser, ["name", "email", "phone"]) +
+          " password updated successfully"
+      );
+  } catch (error) {
+    const serverError = new Error("Internal Server Error");
+    serverError.statusCode = 500;
+    return next(serverError);
+  }
+});
+
 router.get("/", authMW, async (req, res, next) => {
   //* Get all - Admin
   try {

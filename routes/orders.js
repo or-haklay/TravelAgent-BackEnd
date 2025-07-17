@@ -330,11 +330,20 @@ router.patch("/set-agent/:id", authMW, async (req, res, next) => {
       return next(statusError);
     }
     //process
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      { agent: req.body.agent, orderStatus: "In Progress" },
-      { new: true, runValidators: true }
-    );
+    let updatedOrder;
+    if (!req.body.agent) {
+      updatedOrder = await Order.findByIdAndUpdate(
+        req.params.id,
+        { agent: null, orderStatus: "Wait For Agent" },
+        { new: true, runValidators: true }
+      );
+    } else {
+      updatedOrder = await Order.findByIdAndUpdate(
+        req.params.id,
+        { agent: req.body.agent, orderStatus: "In Progress" },
+        { new: true, runValidators: true }
+      );
+    }
     if (!updatedOrder) {
       const notFoundError = new Error("Order could not be updated");
       notFoundError.statusCode = 404;
