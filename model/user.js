@@ -73,10 +73,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  balance: {
-    type: Number,
-    default: 0,
-  },
   passport: { type: passportSchema, required: false },
 });
 
@@ -102,7 +98,6 @@ const validation = joi.object({
   isAgent: joi.boolean(),
   isAdmin: joi.boolean(),
   createAt: joi.date(),
-  balance: joi.number(),
   passport: {
     passportNumber: joi.string(),
     passportDate: joi.date(),
@@ -148,14 +143,11 @@ const UserUpdateStatusValidation = joi.object({
   isAgent: joi.boolean(),
   isAdmin: joi.boolean(),
 });
-const UserUpdateBalanceValidation = joi.object({
-  balance: joi.number().required(),
-});
+
 module.exports = {
   User,
   UserValidation,
   SignInValidation,
   UserUpdateValidation,
   UserUpdateStatusValidation,
-  UserUpdateBalanceValidation,
 };

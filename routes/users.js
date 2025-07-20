@@ -51,8 +51,6 @@ router.post("/", async (req, res, next) => {
     user = new User({
       ...req.body,
       createAt: new Date(),
-      balance: 0,
-      orders: [],
       isAgent: false,
       isAdmin: false,
       passportCountry: req.body.passport?.passportCountry.toUpperCase(),
@@ -193,7 +191,7 @@ router.get("/", authMW, async (req, res, next) => {
   }
 });
 
-router.get("/:id", authMW, async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   //* Get user details - every user
   try {
     //process

@@ -15,9 +15,6 @@ app.use(express.json());
 app.use("/api/users", require("./routes/users"));
 app.use("/api/orders", require("./routes/orders"));
 
-app.use("/api/agents", require("./routes/agents"));
-app.use("/api/manager", require("./routes/manager"));
-
 app.use(errorLogger);
 
 const PORT = process.env.PORT || 5000;
