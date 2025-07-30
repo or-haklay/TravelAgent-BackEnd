@@ -175,7 +175,7 @@ const orderValidation = joi.object({
     .object({
       flightFrom: joi.string().trim(),
       flightTo: joi.string().trim(),
-      flightDate: joi.date().required(),
+      flightDate: joi.date(),
       flightTime: joi.string().trim(),
       flightNumber: joi.string().trim(),
     })
